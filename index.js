@@ -21,9 +21,9 @@ const client = new MongoClient(uri, {
 
 async function run() {
     try {
-         const artifactsCollection = client.db('artifactsdb').collection('artifacts');
+        const artifactsCollection = client.db('artifactsdb').collection('artifacts');
 
-          app.get('/api/shareartifacts', async (req, res) => {
+        app.get('/api/shareartifacts', async (req, res) => {
             const result = await artifactsCollection.find().toArray();
             res.send(result);
         });
@@ -43,13 +43,80 @@ async function run() {
             res.send(result);
         });
 
+        app.get('/api/allartifacts', async (req, res) => {
+            const result = await artifactsCollection.find().toArray();
+            res.send(result);
+        });
+
+        app.get('/api/allartifacts/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const result = await artifactsCollection.findOne(query);
+            res.send(result);
+        });
+
+        // Like/unlike toggle route
+        app.patch('/api/like/:id', async (req, res) => {
+            const id = req.params.id;
+            const { userEmail } = req.body;
+
+            if (!userEmail) {
+                return res.status(400).send({ error: 'User email is required for liking/unliking' });
+            }
+
+            try {
+                // Check if user already liked this artifact
+                const alreadyLiked = await likedArtifactsCollection.findOne({
+                    artifactId: new ObjectId(id),
+                    userEmail: userEmail
+                });
+
+                let result;
+                if (alreadyLiked) {
+                    // Unlike: Delete from likedArtifacts collection
+                    await likedArtifactsCollection.deleteOne({
+                        artifactId: new ObjectId(id),
+                        userEmail: userEmail
+                    });
+
+                    // Decrement liked count in artifacts collection
+                    result = await artifactsCollection.updateOne(
+                        { _id: new ObjectId(id) },
+                        { $inc: { liked: -1 } }
+                    );
+
+                    res.send({ liked: false, modifiedCount: result.modifiedCount });
+                } else {
+                    // Like: Insert into likedArtifacts collection
+                    await likedArtifactsCollection.insertOne({
+                        artifactId: new ObjectId(id),
+                        userEmail,
+                        likedAt: new Date()
+                    });
+
+                    // Increment liked count in artifacts collection
+                    result = await artifactsCollection.updateOne(
+                        { _id: new ObjectId(id) },
+                        { $inc: { liked: 1 } }
+                    );
+
+                    res.send({ liked: true, modifiedCount: result.modifiedCount });
+                }
+            } catch (error) {
+                console.error(error);
+                res.status(500).send({ error: 'Server error during like toggle' });
+            }
+        });
+
+
+
         app.post('/api/shareartifacts', async (req, res) => {
             console.log('data in the server', req.body);
             const newArtifacts = req.body;
             const result = await artifactsCollection.insertOne(newArtifacts);
             res.send(result);
         });
-        
+
         // Test ping
         await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
