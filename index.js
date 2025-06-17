@@ -22,6 +22,8 @@ const client = new MongoClient(uri, {
 async function run() {
     try {
         const artifactsCollection = client.db('artifactsdb').collection('artifacts');
+        const likedArtifactsCollection = client.db('artifactsdb').collection('likedArtifacts');
+
 
         app.get('/api/shareartifacts', async (req, res) => {
             const result = await artifactsCollection.find().toArray();
@@ -115,6 +117,26 @@ async function run() {
             const newArtifacts = req.body;
             const result = await artifactsCollection.insertOne(newArtifacts);
             res.send(result);
+        });
+
+        // Get all liked artifacts by user email
+        app.get('/api/likedartifacts/:email', async (req, res) => {
+            const email = req.params.email;
+
+            try {
+                //  Get all liked artifact IDs by this user
+                const likedDocs = await likedArtifactsCollection.find({ userEmail: email }).toArray();
+                const likedArtifactIds = likedDocs.map(doc => doc.artifactId);
+
+                //  Fetch full artifact details using those IDs
+                const query = { _id: { $in: likedArtifactIds } };
+                const likedArtifacts = await artifactsCollection.find(query).toArray();
+
+                res.send(likedArtifacts);
+            } catch (error) {
+                console.error(error);
+                res.status(500).send({ error: 'Failed to fetch liked artifacts' });
+            }
         });
 
         // Test ping
