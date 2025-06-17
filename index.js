@@ -145,6 +145,27 @@ async function run() {
             res.send(result);
         });
 
+         app.put('/api/updateartifacts/:id', async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: new ObjectId(id) };
+            const updatedArtifacts = req.body;
+
+            const updatedDoc = {
+                $set: updatedArtifacts
+            };
+
+            const options = { upsert: true };
+
+            const result = await artifactsCollection.updateOne(filter, updatedDoc, options);
+            res.send(result);
+        });
+
+        app.delete('/api/shareartifacts/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const result = await artifactsCollection.deleteOne(query);
+            res.send(result);
+        }); 
 
         // Test ping
         await client.db("admin").command({ ping: 1 });
