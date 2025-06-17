@@ -139,6 +139,13 @@ async function run() {
             }
         });
 
+         // sort by highest to lower liked
+        app.get('/api/mostliked', async (req, res) => {
+            const result = await artifactsCollection.find().sort({ liked: -1 }).limit(6).toArray();
+            res.send(result);
+        });
+
+
         // Test ping
         await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
