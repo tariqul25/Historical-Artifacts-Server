@@ -2,11 +2,16 @@ const express = require('express');
 require('dotenv').config()
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const cors = require('cors');
+var admin = require("firebase-admin");
 const app = express();
 const port = process.env.PORT || 3000;
-
 app.use(cors())
 app.use(express.json())
+var serviceAccount = require("./serviceAccount.json");
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount)
+});
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.pw0hmwl.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
@@ -19,11 +24,27 @@ const client = new MongoClient(uri, {
     }
 });
 
+// jwt middlewares
+const verifyJWT = async (req, res, next) => {
+  const token = req?.headers?.authorization?.split(' ')[1]
+  // const token = req?.cookies?.token
+  console.log(token)
+  if (!token) return res.status(401).send({ message: 'Unauthorized Access!' })
+  try {
+    const decoded = await admin.auth().verifyIdToken(token)
+    req.tokenEmail = decoded.email
+    console.log(decoded)
+    next()
+  } catch (err) {
+    console.log(err)
+    return res.status(401).send({ message: 'Unauthorized Access!' })
+  }
+}
+
 async function run() {
     try {
         const artifactsCollection = client.db('artifactsdb').collection('artifacts');
         const likedArtifactsCollection = client.db('artifactsdb').collection('likedArtifacts');
-
 
         app.get('/api/shareartifacts', async (req, res) => {
             const result = await artifactsCollection.find().toArray();
@@ -111,20 +132,12 @@ async function run() {
         });
 
 
-
-        app.post('/api/shareartifacts', async (req, res) => {
-            console.log('data in the server', req.body);
-            const newArtifacts = req.body;
-            const result = await artifactsCollection.insertOne(newArtifacts);
-            res.send(result);
-        });
-
         // Get all liked artifacts by user email
-        app.get('/api/likedartifacts/:email', async (req, res) => {
+        app.get('/api/likedartifacts/:email', verifyJWT,async (req, res) => {
             const email = req.params.email;
 
             try {
-                //  Get all liked artifact IDs by this user
+                //  all liked artifact IDs by this user
                 const likedDocs = await likedArtifactsCollection.find({ userEmail: email }).toArray();
                 const likedArtifactIds = likedDocs.map(doc => doc.artifactId);
 
@@ -139,13 +152,28 @@ async function run() {
             }
         });
 
-         // sort by highest to lower liked
+
+        // sort by highest to lower liked
         app.get('/api/mostliked', async (req, res) => {
             const result = await artifactsCollection.find().sort({ liked: -1 }).limit(6).toArray();
             res.send(result);
         });
 
-         app.put('/api/updateartifacts/:id', async (req, res) => {
+        app.get('/api/updateartifacts/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const result = await artifactsCollection.findOne(query);
+            res.send(result);
+        });
+
+        app.post('/api/shareartifacts', async (req, res) => {
+            console.log('data in the server', req.body);
+            const newArtifacts = req.body;
+            const result = await artifactsCollection.insertOne(newArtifacts);
+            res.send(result);
+        });
+
+        app.put('/api/updateartifacts/:id', async (req, res) => {
             const id = req.params.id;
             const filter = { _id: new ObjectId(id) };
             const updatedArtifacts = req.body;
@@ -165,7 +193,7 @@ async function run() {
             const query = { _id: new ObjectId(id) };
             const result = await artifactsCollection.deleteOne(query);
             res.send(result);
-        }); 
+        });
 
         // Test ping
         await client.db("admin").command({ ping: 1 });
