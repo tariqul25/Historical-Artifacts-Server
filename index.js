@@ -24,27 +24,33 @@ const client = new MongoClient(uri, {
     }
 });
 
-// jwt middlewares
-const verifyJWT = async (req, res, next) => {
-  const token = req?.headers?.authorization?.split(' ')[1]
-  // const token = req?.cookies?.token
-  console.log(token)
-  if (!token) return res.status(401).send({ message: 'Unauthorized Access!' })
-  try {
-    const decoded = await admin.auth().verifyIdToken(token)
-    req.tokenEmail = decoded.email
-    console.log(decoded)
-    next()
-  } catch (err) {
-    console.log(err)
-    return res.status(401).send({ message: 'Unauthorized Access!' })
-  }
-}
+
 
 async function run() {
     try {
         const artifactsCollection = client.db('artifactsdb').collection('artifacts');
         const likedArtifactsCollection = client.db('artifactsdb').collection('likedArtifacts');
+
+        // jwt middlewares
+   const verifyJWT = async (req, res, next) => {
+            const authHeader = req?.headers?.authorization
+            console.log(authHeader)
+            if (!authHeader) {
+                return res.status(401).send({ message: 'Unauthorized Access!' })
+            }
+
+            const token = authHeader?.split(' ')[1]
+          
+            try {
+                const decoded = await admin.auth().verifyIdToken(token)
+                req.decoded = decoded
+                console.log(decoded)
+                next()
+            } catch (err) {
+                console.log(err)
+                return res.status(401).send({ message: 'Unauthorized Access!' })
+            }
+        }
 
         app.get('/api/shareartifacts', async (req, res) => {
             const result = await artifactsCollection.find().toArray();
@@ -135,6 +141,7 @@ async function run() {
         // Get all liked artifacts by user email
         app.get('/api/likedartifacts/:email',verifyJWT,async (req, res) => {
             const email = req.params.email;
+            console.log(req.headers);
 
             try {
                 //  all liked artifact IDs by this user
