@@ -62,7 +62,7 @@ async function run() {
         });
 
         // get artifacts by user email
-        app.get('/api/shareartifacts/email/:email', async (req, res) => {
+        app.get('/api/shareartifacts/email/:email',verifyJWT, async (req, res) => {
             const email = req.params.email;
             const query = { userEmail: email };
             const result = await artifactsCollection.find(query).toArray();
@@ -74,7 +74,7 @@ async function run() {
             res.send(result);
         });
 
-        app.get('/api/allartifacts/:id', async (req, res) => {
+        app.get('/api/allartifacts/:id',verifyJWT, async (req, res) => {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) };
             const result = await artifactsCollection.findOne(query);
@@ -82,7 +82,7 @@ async function run() {
         });
 
         // Like/unlike toggle route
-        app.patch('/api/like/:id', async (req, res) => {
+        app.patch('/api/like/:id',verifyJWT, async (req, res) => {
             const id = req.params.id;
             const { userEmail } = req.body;
 
@@ -134,8 +134,8 @@ async function run() {
             }
         });
 
-        // Add this in your Express server code inside run()
-        app.get('/api/likedartifacts/check/:artifactId/:userEmail', async (req, res) => {
+        // is artifacts liked check
+        app.get('/api/likedartifacts/check/:artifactId/:userEmail',verifyJWT, async (req, res) => {
             const { artifactId, userEmail } = req.params;
             try {
                 const likedDoc = await likedArtifactsCollection.findOne({
@@ -151,7 +151,7 @@ async function run() {
 
 
         // Unlike route
-        app.patch('/api/unlike/:id', async (req, res) => {
+        app.patch('/api/unlike/:id', verifyJWT, async (req, res) => {
             const id = req.params.id;
             const { userEmail } = req.body;
 
@@ -190,7 +190,7 @@ async function run() {
 
 
         // Get all liked artifacts by user email
-       app.get('/api/likedartifacts/user/:email', async (req, res) => {
+       app.get('/api/likedartifacts/user/:email', verifyJWT, async (req, res) => {
             const email = req.params.email;
 
             try {
@@ -216,20 +216,20 @@ async function run() {
             res.send(result);
         });
 
-        app.get('/api/updateartifacts/:id', async (req, res) => {
+        app.get('/api/updateartifacts/:id',verifyJWT, async (req, res) => {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) };
             const result = await artifactsCollection.findOne(query);
             res.send(result);
         });
 
-        app.post('/api/shareartifacts', async (req, res) => {
+        app.post('/api/shareartifacts', verifyJWT, async (req, res) => {
             const newArtifacts = req.body;
             const result = await artifactsCollection.insertOne(newArtifacts);
             res.send(result);
         });
 
-        app.put('/api/updateartifacts/:id', async (req, res) => {
+        app.put('/api/updateartifacts/:id',verifyJWT, async (req, res) => {
             const id = req.params.id;
             const filter = { _id: new ObjectId(id) };
             const updatedArtifacts = req.body;
@@ -244,7 +244,7 @@ async function run() {
             res.send(result);
         });
 
-        app.delete('/api/shareartifacts/:id', async (req, res) => {
+        app.delete('/api/shareartifacts/:id',verifyJWT, async (req, res) => {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) };
             const result = await artifactsCollection.deleteOne(query);
