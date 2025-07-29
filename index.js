@@ -187,8 +187,6 @@ async function run() {
         });
 
 
-
-
         // Get all liked artifacts by user email
        app.get('/api/likedartifacts/user/:email', verifyJWT, async (req, res) => {
             const email = req.params.email;
