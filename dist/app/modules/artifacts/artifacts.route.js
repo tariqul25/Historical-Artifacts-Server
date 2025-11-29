@@ -1,0 +1,16 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.artifactRoutes = void 0;
+const express_1 = require("express");
+const artifacts_controller_1 = require("./artifacts.controller");
+const router = (0, express_1.Router)();
+router.post('/shareartifacts', artifacts_controller_1.createArtifactController);
+router.get('/shareartifacts', artifacts_controller_1.getAllArtifactsController);
+router.get('/shareartifacts/:id', artifacts_controller_1.getArtifactController);
+router.get('/allartifacts', artifacts_controller_1.getAllArtifactsController);
+router.get('/allartifacts/:id', artifacts_controller_1.getArtifactController);
+router.get('/shareartifacts/email/:email', artifacts_controller_1.getArtifactsByEmailController);
+router.put('/updateartifacts/:id', artifacts_controller_1.updateArtifactController);
+router.delete('/shareartifacts/:id', artifacts_controller_1.deleteArtifactController);
+router.get('/mostliked', artifacts_controller_1.getMostLikedController);
+exports.artifactRoutes = router;

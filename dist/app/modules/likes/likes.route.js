@@ -1,0 +1,11 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.likedRoutes = void 0;
+const express_1 = require("express");
+const likes_controller_1 = require("./likes.controller");
+const router = (0, express_1.Router)();
+router.patch('/like/:id', likes_controller_1.toggleLikeController);
+router.get('/likedartifacts/user/:email', likes_controller_1.getLikedByUserController);
+router.patch('/unlike/:id', likes_controller_1.unlikeArtifactController);
+router.get('/likedartifacts/check/:artifactId/:userEmail', likes_controller_1.checkLikedStatusController);
+exports.likedRoutes = router;
